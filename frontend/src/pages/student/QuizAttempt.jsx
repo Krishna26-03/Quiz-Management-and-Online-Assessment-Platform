@@ -14,7 +14,25 @@ export default function QuizAttempt() {
   const [totalSeconds, setTotalSeconds] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const submittedRef = useRef(false);
+  const targetEndRef = useRef(null);
+
+  function applyAttemptData(data) {
+    setAttempt(data);
+    if (data.savedAnswers && Object.keys(data.savedAnswers).length > 0) {
+      setAnswers((prev) => ({ ...data.savedAnswers, ...prev }));
+    }
+
+    const totalSecs = (data.durationMinutes ? data.durationMinutes * 60 : 0) || (data.remainingSeconds || 60);
+    setTotalSeconds(Math.max(1, totalSecs));
+
+    let remSecs = data.remainingSeconds;
+    if (remSecs == null || remSecs === undefined) {
+      remSecs = totalSecs;
+    }
+
+    setSecondsLeft(remSecs);
+    targetEndRef.current = Date.now() + remSecs * 1000;
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -24,13 +42,9 @@ export default function QuizAttempt() {
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
-        setAttempt(parsed);
-        if (parsed.savedAnswers) {
-          setAnswers(parsed.savedAnswers);
+        if (isMounted) {
+          applyAttemptData(parsed);
         }
-        const startMs = new Date(parsed.startedAt).getTime();
-        const deadlineMs = new Date(parsed.deadlineAt).getTime();
-        setTotalSeconds(Math.max(1, Math.round((deadlineMs - startMs) / 1000)));
       } catch (e) {
         // ignore cache parse error
       }
@@ -40,14 +54,8 @@ export default function QuizAttempt() {
     api.get(`/attempts/${attemptId}`)
       .then((data) => {
         if (!isMounted) return;
-        setAttempt(data);
+        applyAttemptData(data);
         sessionStorage.setItem(`attempt_${attemptId}`, JSON.stringify(data));
-        if (data.savedAnswers && Object.keys(data.savedAnswers).length > 0) {
-          setAnswers((prev) => ({ ...data.savedAnswers, ...prev }));
-        }
-        const startMs = new Date(data.startedAt).getTime();
-        const deadlineMs = new Date(data.deadlineAt).getTime();
-        setTotalSeconds(Math.max(1, Math.round((deadlineMs - startMs) / 1000)));
       })
       .catch((err) => {
         if (!isMounted) return;
@@ -67,10 +75,11 @@ export default function QuizAttempt() {
   }, [attemptId, navigate]);
 
   useEffect(() => {
-    if (!attempt) return;
+    if (!targetEndRef.current) return;
     const tick = () => {
-      const remaining = Math.round((new Date(attempt.deadlineAt).getTime() - Date.now()) / 1000);
-      setSecondsLeft(remaining);
+      if (!targetEndRef.current) return;
+      const remaining = Math.round((targetEndRef.current - Date.now()) / 1000);
+      setSecondsLeft(Math.max(0, remaining));
       if (remaining <= 0 && !submittedRef.current) {
         submittedRef.current = true;
         handleSubmit(true);

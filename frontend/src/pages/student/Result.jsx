@@ -13,13 +13,9 @@ export default function Result() {
     api.get(`/attempts/${attemptId}/result`)
       .then(setResult)
       .catch((e) => {
-        if (e.message && e.message.toLowerCase().includes('in progress')) {
-          navigate(`/attempt/${attemptId}`, { replace: true });
-          return;
-        }
-        setError(e.message);
+        setError(e.message || 'Failed to load result.');
       });
-  }, [attemptId, navigate]);
+  }, [attemptId]);
 
   if (error) {
     const isInProgress = error.toLowerCase().includes('in progress');

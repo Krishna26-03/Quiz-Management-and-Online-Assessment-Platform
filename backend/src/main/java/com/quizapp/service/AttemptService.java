@@ -348,8 +348,13 @@ public class AttemptService {
             }
         }
 
+        long remainingSeconds = 0;
+        if (attempt.getDeadlineAt() != null) {
+            remainingSeconds = Math.max(0, java.time.Duration.between(LocalDateTime.now(), attempt.getDeadlineAt()).getSeconds());
+        }
+
         return new StartAttemptResponse(attempt.getId(), attempt.getQuiz().getId(), attempt.getQuiz().getTitle(),
-                attempt.getQuiz().getDurationMinutes(), attempt.getStartedAt(), attempt.getDeadlineAt(), views, savedAnswers);
+                attempt.getQuiz().getDurationMinutes(), attempt.getStartedAt(), attempt.getDeadlineAt(), remainingSeconds, views, savedAnswers);
     }
 
     private AttemptResultResponse toResultResponse(QuizAttempt attempt, List<AnswerResult> results) {

@@ -18,6 +18,7 @@ public class AttemptDtos {
             Integer durationMinutes,
             LocalDateTime startedAt,
             LocalDateTime deadlineAt,
+            Long remainingSeconds,
             List<QuestionDtos.QuestionAttemptView> questions,
             java.util.Map<Long, List<Long>> savedAnswers
     ) {}
