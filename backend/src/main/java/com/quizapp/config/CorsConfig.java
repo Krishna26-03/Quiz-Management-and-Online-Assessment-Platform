@@ -20,16 +20,26 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        List<String> origins = Arrays.stream(allowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(s -> {
-                    if (s.equals("*") || s.startsWith("http://") || s.startsWith("https://")) {
-                        return s;
-                    }
-                    return "https://" + s;
-                })
-                .toList();
+        List<String> origins = new java.util.ArrayList<>(
+                Arrays.stream(allowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(s -> !s.isEmpty())
+                        .map(s -> {
+                            if (s.equals("*") || s.startsWith("http://") || s.startsWith("https://")) {
+                                return s;
+                            }
+                            return "https://" + s;
+                        })
+                        .toList()
+        );
+
+        // Always allow vercel deployments, localhost, and wildcard patterns
+        if (!origins.contains("https://*.vercel.app")) {
+            origins.add("https://*.vercel.app");
+        }
+        if (!origins.contains("http://localhost:[*]")) {
+            origins.add("http://localhost:[*]");
+        }
 
         configuration.setAllowedOriginPatterns(origins.isEmpty() ? List.of("*") : origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
