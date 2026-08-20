@@ -1,0 +1,41 @@
+# ---- Maven ----
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ---- Compiled classes ----
+*.class
+
+# ---- Spring Boot ----
+*.jar
+*.war
+!**/src/main/**/*.jar
+
+# ---- Logs ----
+*.log
+spring.log
+
+# ---- Env / config secrets ----
+application-local.yml
+application-local.yaml
+application-local.properties
+.env
+.env.*
+!.env.example
+
+# ---- IDEs ----
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
