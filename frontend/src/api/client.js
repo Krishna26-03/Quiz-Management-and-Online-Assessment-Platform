@@ -1,7 +1,8 @@
 // In local dev, Vite proxies '/api' to localhost:8080 (see vite.config.js).
 // In production (Vercel), the frontend and backend live on different domains, so
 // VITE_API_URL must point at the deployed backend, e.g. https://your-backend.onrender.com/api
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+const rawBase = import.meta.env.VITE_API_URL || '/api';
+const BASE_URL = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
 
 function getToken() {
   return localStorage.getItem('quizly_token');
@@ -14,7 +15,8 @@ async function request(path, { method = 'GET', body, auth = true } = {}) {
     if (token) headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  const res = await fetch(`${BASE_URL}${cleanPath}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
