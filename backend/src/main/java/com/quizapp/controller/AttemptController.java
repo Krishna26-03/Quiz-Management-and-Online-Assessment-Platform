@@ -25,6 +25,12 @@ public class AttemptController {
         return ResponseEntity.ok(attemptService.startAttempt(quizId, student));
     }
 
+    @GetMapping("/{attemptId}")
+    public ResponseEntity<StartAttemptResponse> getAttempt(@PathVariable Long attemptId, Authentication authentication) {
+        var student = currentUserResolver.resolve(authentication);
+        return ResponseEntity.ok(attemptService.getActiveAttempt(attemptId, student));
+    }
+
     // Progressive autosave - called by the client periodically / on each answer change
     @PutMapping("/{attemptId}/answer")
     public ResponseEntity<Void> saveAnswer(@PathVariable Long attemptId, @Valid @RequestBody SaveAnswerRequest request,

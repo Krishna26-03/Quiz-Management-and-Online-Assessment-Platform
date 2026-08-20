@@ -9,6 +9,8 @@ import java.util.List;
 
 public class AttemptDtos {
 
+    public record ShuffledQuestion(Long questionId, List<Long> optionIds) {}
+
     public record StartAttemptResponse(
             Long attemptId,
             Long quizId,
@@ -16,7 +18,8 @@ public class AttemptDtos {
             Integer durationMinutes,
             LocalDateTime startedAt,
             LocalDateTime deadlineAt,
-            List<QuestionDtos.QuestionAttemptView> questions
+            List<QuestionDtos.QuestionAttemptView> questions,
+            java.util.Map<Long, List<Long>> savedAnswers
     ) {}
 
     public record AnswerSubmission(

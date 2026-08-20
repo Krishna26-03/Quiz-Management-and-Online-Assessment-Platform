@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../../api/client';
 
 export default function Result() {
   const { attemptId } = useParams();
+  const navigate = useNavigate();
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [showReview, setShowReview] = useState(true);
@@ -11,15 +12,27 @@ export default function Result() {
   useEffect(() => {
     api.get(`/attempts/${attemptId}/result`)
       .then(setResult)
-      .catch((e) => setError(e.message));
-  }, [attemptId]);
+      .catch((e) => {
+        if (e.message && e.message.toLowerCase().includes('in progress')) {
+          navigate(`/attempt/${attemptId}`, { replace: true });
+          return;
+        }
+        setError(e.message);
+      });
+  }, [attemptId, navigate]);
 
   if (error) {
+    const isInProgress = error.toLowerCase().includes('in progress');
     return (
       <div className="page">
         <div className="container" style={{ maxWidth: 780 }}>
           <div className="error-box">{error}</div>
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: 16, display: 'flex', gap: 12 }}>
+            {isInProgress && (
+              <Link to={`/attempt/${attemptId}`} className="btn btn-primary">
+                Continue Quiz Attempt →
+              </Link>
+            )}
             <Link to="/quizzes" className="btn btn-secondary">Back to Quizzes</Link>
           </div>
         </div>

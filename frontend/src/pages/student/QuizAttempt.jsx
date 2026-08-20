@@ -17,17 +17,54 @@ export default function QuizAttempt() {
   const submittedRef = useRef(false);
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Load from cache first if present for instant rendering
     const cached = sessionStorage.getItem(`attempt_${attemptId}`);
     if (cached) {
-      const parsed = JSON.parse(cached);
-      setAttempt(parsed);
-      const startMs = new Date(parsed.startedAt).getTime();
-      const deadlineMs = new Date(parsed.deadlineAt).getTime();
-      setTotalSeconds(Math.round((deadlineMs - startMs) / 1000));
-    } else {
-      setError('Attempt session not found in this browser tab. Please start the quiz again from the list.');
+      try {
+        const parsed = JSON.parse(cached);
+        setAttempt(parsed);
+        if (parsed.savedAnswers) {
+          setAnswers(parsed.savedAnswers);
+        }
+        const startMs = new Date(parsed.startedAt).getTime();
+        const deadlineMs = new Date(parsed.deadlineAt).getTime();
+        setTotalSeconds(Math.max(1, Math.round((deadlineMs - startMs) / 1000)));
+      } catch (e) {
+        // ignore cache parse error
+      }
     }
-  }, [attemptId]);
+
+    // Always fetch fresh attempt state from backend
+    api.get(`/attempts/${attemptId}`)
+      .then((data) => {
+        if (!isMounted) return;
+        setAttempt(data);
+        sessionStorage.setItem(`attempt_${attemptId}`, JSON.stringify(data));
+        if (data.savedAnswers && Object.keys(data.savedAnswers).length > 0) {
+          setAnswers((prev) => ({ ...data.savedAnswers, ...prev }));
+        }
+        const startMs = new Date(data.startedAt).getTime();
+        const deadlineMs = new Date(data.deadlineAt).getTime();
+        setTotalSeconds(Math.max(1, Math.round((deadlineMs - startMs) / 1000)));
+      })
+      .catch((err) => {
+        if (!isMounted) return;
+        const msg = err.message || '';
+        if (msg.includes('already been submitted') || msg.includes('auto-submitted') || msg.includes('Time is up')) {
+          navigate(`/result/${attemptId}`, { replace: true });
+          return;
+        }
+        if (!cached) {
+          setError(msg || 'Failed to load quiz attempt.');
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [attemptId, navigate]);
 
   useEffect(() => {
     if (!attempt) return;

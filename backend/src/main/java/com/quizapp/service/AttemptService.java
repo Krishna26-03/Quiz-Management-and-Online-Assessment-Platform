@@ -26,9 +26,6 @@ public class AttemptService {
     private final AttemptAnswerRepository attemptAnswerRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** Internal shuffle record: the exact question/option order shown to this student for this attempt. */
-    private record ShuffledQuestion(Long questionId, List<Long> optionIds) {}
-
     @Transactional
     public StartAttemptResponse startAttempt(Long quizId, User student) {
         Quiz quiz = quizRepository.findById(quizId)
@@ -302,6 +299,12 @@ public class AttemptService {
                 .toList();
     }
 
+    @Transactional
+    public StartAttemptResponse getActiveAttempt(Long attemptId, User student) {
+        QuizAttempt attempt = getOwnedActiveAttempt(attemptId, student.getId());
+        return toStartResponse(attempt);
+    }
+
     private QuizAttempt getOwnedActiveAttempt(Long attemptId, Long studentId) {
         QuizAttempt attempt = attemptRepository.findByIdAndUserId(attemptId, studentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attempt not found"));
@@ -336,8 +339,17 @@ public class AttemptService {
                     q.getMarks(), q.getImageUrl(), q.getCodeSnippet(), q.getCodeLanguage(), pos++, options));
         }
 
+        Map<Long, List<Long>> savedAnswers = new HashMap<>();
+        if (attempt.getAnswers() != null) {
+            for (AttemptAnswer a : attempt.getAnswers()) {
+                if (a.getQuestion() != null) {
+                    savedAnswers.put(a.getQuestion().getId(), splitIds(a.getSelectedOptionIds()));
+                }
+            }
+        }
+
         return new StartAttemptResponse(attempt.getId(), attempt.getQuiz().getId(), attempt.getQuiz().getTitle(),
-                attempt.getQuiz().getDurationMinutes(), attempt.getStartedAt(), attempt.getDeadlineAt(), views);
+                attempt.getQuiz().getDurationMinutes(), attempt.getStartedAt(), attempt.getDeadlineAt(), views, savedAnswers);
     }
 
     private AttemptResultResponse toResultResponse(QuizAttempt attempt, List<AnswerResult> results) {
